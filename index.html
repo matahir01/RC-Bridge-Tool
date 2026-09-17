@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1f2a" />
+  <meta name="description" content="Private reinforced-concrete bridge girder research and preliminary design workspace." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1f2a'/%3E%3Cpath d='M11 21h42v8H36v22h-8V29H11z' fill='%23f2b861'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>RC Girder Workbench</title>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">RG</span><div><strong>RC Girder Workbench</strong><small>Research & preliminary design</small></div></div>
+    <label class="project-name"><span>Project</span><input id="project-name" value="15 m RC Girder Study" /></label>
+    <div class="top-actions">
+      <select id="saved-projects" aria-label="Saved projects"><option value="">Open saved project…</option></select>
+      <button id="save-project" class="button primary">Save</button>
+      <button id="new-project" class="button quiet">New</button>
+      <button id="export-project" class="button quiet">Export JSON</button>
+      <label class="file-button quiet">Import JSON<input id="import-project" type="file" accept=".json,application/json" /></label>
+      <button id="print-report" class="button accent">Report / PDF</button>
+      <button id="install-app" class="button quiet" hidden>Install app</button>
+    </div>
+  </header>
+
+  <div class="noticebar">
+    <span class="private-pill"><i></i> Owner-only Site</span>
+    <span>Non-prestressed RC · transparent preliminary checks · projects save on this device</span>
+    <label>Units <select id="unit-system"><option value="SI">SI</option><option value="US">US customary</option></select></label>
+  </div>
+
+  <nav class="tabs" aria-label="Workbench sections">
+    <button class="tab active" data-tab="model">1. Model</button>
+    <button class="tab" data-tab="loading">2. Loading & distribution</button>
+    <button class="tab" data-tab="checks">3. Checks & detailing</button>
+    <button class="tab" data-tab="research">4. Reliability & ANN</button>
+    <button class="tab" data-tab="verification">5. Verification & report</button>
+  </nav>
+
+  <main>
+    <section class="tab-panel active" id="panel-model">
+      <div class="workspace-grid">
+        <aside class="panel controls-panel">
+          <div class="panel-head"><div><p class="eyebrow">Editable model</p><h1>Geometry & materials</h1></div><button id="reset-model" class="text-button">Reset baseline</button></div>
+          <div id="input-issues" class="warning" hidden></div>
+          <details open><summary>System and bridge width</summary><div id="system-fields" class="field-grid"></div></details>
+          <details open><summary>Girder section</summary><div id="section-fields" class="field-grid"></div></details>
+          <details><summary>Materials and reinforcement</summary><div id="material-fields" class="field-grid"></div></details>
+          <details><summary>Serviceability assumptions</summary><div id="service-fields" class="field-grid"></div></details>
+        </aside>
+
+        <div class="results-column">
+          <article class="panel model-summary">
+            <div class="summary-top"><div><p class="eyebrow">Live analysis</p><h2 id="system-title">—</h2><p id="model-subtitle">—</p></div><span id="overall-status" class="status">—</span></div>
+            <div id="bridge-diagram" class="bridge-diagram"></div>
+            <div class="summary-stats"><div><span>Bridge width</span><strong id="stat-width">—</strong></div><div><span>Girder spacing</span><strong id="stat-spacing">—</strong></div><div><span>Composite I</span><strong id="stat-inertia">—</strong></div><div><span>Analysis source</span><strong id="stat-source">—</strong></div></div>
+          </article>
+          <div id="headline-checks" class="headline-checks"></div>
+          <article class="panel"><div class="panel-head"><div><p class="eyebrow">Response overview</p><h2>Demand and capacity</h2></div><span class="hint">Utilisation ≤ 1.00</span></div><div id="utilisation-chart" class="bar-chart"></div></article>
+          <article class="panel assumptions"><div class="panel-head"><div><p class="eyebrow">Modelling basis</p><h2>Fixed assumptions</h2></div><span class="tag">READ ONLY</span></div><div class="assumption-grid"><div><b>Material model</b><span>Normal-weight concrete, 25 kN/m³; B500-type reinforcing steel model</span></div><div><b>Longitudinal model</b><span>Euler–Bernoulli beam finite elements; 6 elements per span</span></div><div><b>Traffic basis</b><span>EN 1991-2 LM1-style notional lanes, UDL and tandem-system envelopes</span></div><div><b>Scope boundary</b><span>Preliminary research tool—not a certified final bridge design</span></div></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="panel-loading">
+      <div class="section-title"><div><p class="eyebrow">Traffic model</p><h1>Intelligent loading & transverse distribution</h1><p>The lane arrangement is permuted to maximise the selected girder response. Distribution may use Courbon, lever-rule interpolation, tributary strips, or imported grillage factors.</p></div></div>
+      <div class="two-column">
+        <div class="panel">
+          <div class="panel-head"><h2>Loading controls</h2><span class="tag">EDITABLE</span></div>
+          <div id="loading-fields" class="field-grid wide"></div>
+          <div class="file-zone"><div><b>Grillage analysis import</b><span>CSV may contain distribution shares and/or design actions for each girder.</span></div><label class="file-button primary">Import grillage CSV<input id="grillage-file" type="file" accept=".csv,text/csv" /></label><button id="download-template" class="button quiet">CSV template</button></div>
+          <div id="grillage-state" class="inline-state">No grillage file loaded. Internal beam and transverse models are active.</div>
+          <h3>Notional-lane arrangement</h3>
+          <div class="table-wrap"><table><thead><tr><th>Placed order</th><th>Width</th><th>UDL</th><th>Tandem total</th><th>α factors</th></tr></thead><tbody id="lane-table"></tbody></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>Distribution by girder</h2><p id="distribution-caption">—</p></div><span id="distribution-method" class="tag">—</span></div>
+          <div id="distribution-chart" class="distribution-chart"></div>
+          <div class="action-grid" id="action-grid"></div>
+          <details open><summary>Calculation trace</summary><div id="calculation-trace" class="calculation-trace"></div></details>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="panel-checks">
+      <div class="section-title"><div><p class="eyebrow">ULS, SLS & fatigue</p><h1>Checks and reinforcement recommendations</h1><p>Positive and negative flexure, shear, torsion interaction, crack width, deflection and reinforcement stress-range checks update with the model.</p></div><span class="scope-note">Detailing output is a starting recommendation and must be reviewed for anchorage, laps, curtailment and local effects.</span></div>
+      <div id="check-cards" class="check-grid"></div>
+      <div class="two-column lower">
+        <article class="panel"><div class="panel-head"><div><p class="eyebrow">Preliminary detailing</p><h2>Reinforcement schedule</h2></div><span class="tag">RECOMMENDATION</span></div><div class="table-wrap"><table><thead><tr><th>Zone</th><th>Required</th><th>Provided input</th><th>Suggested arrangement</th></tr></thead><tbody id="reinforcement-table"></tbody></table></div><ul id="detailing-notes" class="notes"></ul></article>
+        <article class="panel"><div class="panel-head"><div><p class="eyebrow">Section view</p><h2 id="section-drawing-title">—</h2></div></div><div id="section-drawing" class="section-drawing"></div><div id="section-properties" class="mini-stats"></div></article>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="panel-research">
+      <div class="section-title"><div><p class="eyebrow">MSc research mode</p><h1>Reliability experiment & ANN surrogate</h1><p>Correlated Latin Hypercube sampling evaluates flexure, shear and deflection margins for a governing equivalent span. The deterministic multi-span/grillage checks remain the design source of record.</p></div></div>
+      <div class="two-column">
+        <article class="panel"><div class="panel-head"><div><h2>Probabilistic inputs</h2><p>Illustrative distributions—document your evidence before thesis use.</p></div><button id="sync-means" class="text-button">Sync means</button></div><div class="table-wrap"><table class="variable-table"><thead><tr><th>Variable</th><th>Distribution</th><th>Mean</th><th>COV</th><th>Lower</th><th>Upper</th></tr></thead><tbody id="variable-body"></tbody></table></div><div class="correlations"><label>ρ(d,b)<input data-corr="db" type="number" min="-.75" max=".75" step=".05" value=".25" /></label><label>ρ(d,As)<input data-corr="dAs" type="number" min="-.75" max=".75" step=".05" value=".15" /></label><label>ρ(DL,LL)<input data-corr="dlLl" type="number" min="-.75" max=".75" step=".05" value=".10" /></label></div></article>
+        <div>
+          <article class="panel experiment-panel"><div class="run-controls"><label>Samples<input id="sample-count" type="number" min="200" max="10000" step="100" value="1000" /></label><label>Seed<input id="sample-seed" type="number" step="1" value="7341" /></label><button id="run-lhs" class="button accent">Run LHS</button><button id="export-csv" class="button quiet" disabled>Export dataset</button></div><div id="lhs-state" class="inline-state">Ready to sample.</div><div id="beta-grid" class="beta-grid"></div></article>
+          <article class="panel ann-panel"><div class="panel-head"><div><h2>7–H–3 neural-network surrogate</h2><p>70% training · 15% validation · 15% test</p></div></div><div class="run-controls"><label>Hidden neurons<input id="hidden-neurons" type="number" min="6" max="30" value="14" /></label><label>Epochs<input id="ann-epochs" type="number" min="40" max="500" step="20" value="180" /></label><button id="train-ann" class="button primary" disabled>Train ANN</button></div><div class="progress"><span id="ann-progress"></span></div><div id="ann-state" class="inline-state">Run LHS first.</div><div id="ann-metrics" class="ann-metrics"></div><div class="run-controls rbdo-controls"><label>Target β<input id="target-beta" type="number" min="0.5" max="5" step=".1" value="2.0" /></label><label>Candidates<input id="rbdo-iterations" type="number" min="60" max="1000" step="20" value="240" /></label><button id="run-rbdo" class="button primary" disabled>Run ANN-RBDO</button></div><div id="rbdo-state" class="inline-state">Train the ANN first.</div><div id="rbdo-result"></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="panel-verification">
+      <div class="section-title"><div><p class="eyebrow">Independent comparison</p><h1>Verification & National Annex</h1><p>Enter hand-calculation or established-software results and compare them with a ±5% review threshold. Agreement is evidence—not automatic validation.</p></div></div>
+      <div class="two-column">
+        <article class="panel"><div class="panel-head"><div><h2>Reference results</h2><p>Use one consistent load combination and sign convention.</p></div></div><label class="source-label">Reference source<input id="reference-source" placeholder="e.g. hand calculation / MIDAS Civil case 12" /></label><div id="verification-fields" class="field-grid wide"></div><button id="compare-results" class="button primary">Compare results</button><div class="table-wrap"><table><thead><tr><th>Quantity</th><th>Workbench</th><th>Reference</th><th>Difference</th><th>Review</th></tr></thead><tbody id="verification-table"></tbody></table></div></article>
+        <div>
+          <article class="panel"><div class="panel-head"><div><h2>National Annex / project values</h2><p>Editable parameters; confirm against the adopted National Annex.</p></div><span class="tag">CUSTOM</span></div><div id="na-fields" class="field-grid wide"></div></article>
+          <article class="panel validation-card"><div class="panel-head"><div><h2>Automated verification cases</h2><p>Representative internal consistency checks.</p></div></div><div id="validation-list"></div></article>
+          <article class="panel report-card"><h2>Calculation report</h2><p>The report captures current inputs, assumptions, actions, checks, reinforcement recommendations, verification entries and model limitations.</p><button id="print-report-secondary" class="button accent">Open printable report / Save PDF</button></article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer><span>Private MSc research prototype · v3.0</span><span>For supervised preliminary design and research use; independent engineering verification required.</span></footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>
