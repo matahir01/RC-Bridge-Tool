@@ -21,13 +21,14 @@
       <button id="export-project" class="button quiet">Export JSON</button>
       <label class="file-button quiet">Import JSON<input id="import-project" type="file" accept=".json,application/json" /></label>
       <button id="print-report" class="button accent">Report / PDF</button>
-      <button id="install-app" class="button quiet" hidden>Install app</button>
+      <a id="download-offline" class="button quiet" href="offline/RC-Girder-Workbench.html" download="RC-Girder-Workbench.html" title="Download one file and open it on your laptop without internet or hosting">Download offline app</a>
+      <button id="install-app" class="button quiet" hidden>Install web app</button>
     </div>
   </header>
 
   <div class="noticebar">
-    <span class="private-pill"><i></i> Owner-only Site</span>
-    <span>Non-prestressed RC · transparent preliminary checks · projects save on this device</span>
+    <span id="run-mode" class="private-pill">Runs on your device</span>
+    <span id="storage-note">Non-prestressed RC · projects stay in this browser · Export JSON to keep a file</span>
     <label>Units <select id="unit-system"><option value="SI">SI</option><option value="US">US customary</option></select></label>
   </div>
 
@@ -117,7 +118,7 @@
     </section>
   </main>
 
-  <footer><span>Private MSc research prototype · v3.0</span><span>For supervised preliminary design and research use; independent engineering verification required.</span></footer>
+  <footer><span>MSc research prototype · v3.1</span><span>For supervised preliminary design and research use; independent engineering verification required.</span></footer>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script type="module" src="app.mjs"></script>
 </body>

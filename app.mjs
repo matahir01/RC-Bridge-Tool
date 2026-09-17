@@ -7,6 +7,7 @@ const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;
 const finite=value=>value!==null&&value!==undefined&&value!==""&&Number.isFinite(Number(value));
 const fmt=(value,d=2)=>finite(value)?Number(value).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}):"—";
 const STORAGE_KEY="rc-girder-workbench-projects-v3";
+const OFFLINE_EDITION=document.documentElement.dataset.edition==="offline"||location.protocol==="file:";
 
 const UNITS={
   lengthM:{SI:[1,"m"],US:[3.280839895,"ft"]},dimMm:{SI:[1,"mm"],US:[.0393700787,"in"]},areaMm2:{SI:[1,"mm²"],US:[.0015500031,"in²"]},
@@ -161,6 +162,14 @@ function toast(message){const t=$("toast");t.textContent=message;t.classList.add
 function download(name,text,type="text/plain"){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function savedProjects(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}")}catch{return{}}}
 function snapshot(){return{version:3,savedAt:new Date().toISOString(),design:{...design,projectName:$("project-name").value.trim()||"Untitled RC Girder"},variables,correlations,reference}}
+function exportProject(){const data=snapshot();download(`${data.design.projectName.replace(/[^a-z0-9]+/gi,"-").toLowerCase()}.rcgirder.json`,JSON.stringify(data,null,2),"application/json")}
+function saveProject(){
+  design.projectName=$("project-name").value.trim()||"Untitled RC Girder";
+  let stored=false;
+  try{const projects=savedProjects();projects[design.projectName]=snapshot();localStorage.setItem(STORAGE_KEY,JSON.stringify(projects));stored=true;refreshSaved();$("saved-projects").value=design.projectName}catch{}
+  if(OFFLINE_EDITION||!stored){exportProject();toast("Project file downloaded. Use Import JSON to reopen it.")}
+  else toast("Saved in this browser. Export JSON to keep a project file.");
+}
 function refreshSaved(){const projects=savedProjects(),selected=$("saved-projects").value;$("saved-projects").innerHTML=`<option value="">Open saved project…</option>${Object.keys(projects).sort().map(n=>`<option value="${esc(n)}" ${selected===n?"selected":""}>${esc(n)}</option>`).join("")}`}
 function loadSnapshot(data){if(!data?.design)throw new Error("This is not a valid RC Girder Workbench project file.");design={...clone(BRIDGE_DEFAULTS),...data.design};variables=Array.isArray(data.variables)?data.variables.map(clone):VARIABLES.map(clone);correlations={db:.25,dAs:.15,dlLl:.10,...data.correlations};reference={source:"",mPosEd:null,mNegEd:null,vEd:null,tEd:null,deflectionMm:null,...data.reference};experiment=null;ann=null;renderVariables();renderAll();toast("Project loaded")}
 
@@ -175,9 +184,9 @@ $("unit-system").addEventListener("change",e=>{design.unitSystem=e.target.value;
 $("project-name").addEventListener("change",e=>{design.projectName=e.target.value.trim()||"Untitled RC Girder"});
 $("reset-model").addEventListener("click",()=>{design=clone(BRIDGE_DEFAULTS);reference={source:"",mPosEd:null,mNegEd:null,vEd:null,tEd:null,deflectionMm:null};invalidateResearch();renderAll();toast("Baseline restored")});
 $("new-project").addEventListener("click",()=>{design=clone(BRIDGE_DEFAULTS);design.projectName="Untitled RC Girder";reference={source:"",mPosEd:null,mNegEd:null,vEd:null,tEd:null,deflectionMm:null};experiment=null;ann=null;renderAll();toast("New project started")});
-$("save-project").addEventListener("click",()=>{design.projectName=$("project-name").value.trim()||"Untitled RC Girder";const projects=savedProjects();projects[design.projectName]=snapshot();localStorage.setItem(STORAGE_KEY,JSON.stringify(projects));refreshSaved();$("saved-projects").value=design.projectName;toast("Saved on this device")});
+$("save-project").addEventListener("click",saveProject);
 $("saved-projects").addEventListener("change",e=>{if(!e.target.value)return;const item=savedProjects()[e.target.value];if(item)loadSnapshot(item)});
-$("export-project").addEventListener("click",()=>{const data=snapshot();download(`${data.design.projectName.replace(/[^a-z0-9]+/gi,"-").toLowerCase()}.rcgirder.json`,JSON.stringify(data,null,2),"application/json")});
+$("export-project").addEventListener("click",exportProject);
 $("import-project").addEventListener("change",async e=>{try{loadSnapshot(JSON.parse(await e.target.files[0].text()))}catch(err){toast(err.message)}e.target.value=""});
 $("grillage-file").addEventListener("change",async e=>{try{design.grillageResults=parseGrillageCsv(await e.target.files[0].text());design.useGrillageResults=true;design.distributionMethod="imported";renderAll();toast(`${design.grillageResults.length} grillage row(s) imported`)}catch(err){toast(err.message)}e.target.value=""});
 $("download-template").addEventListener("click",()=>download("grillage-results-template.csv",GRILLAGE_TEMPLATE,"text/csv"));
@@ -186,9 +195,10 @@ $("compare-results").addEventListener("click",()=>{renderVerification();toast("C
 $("print-report").addEventListener("click",printReport);$("print-report-secondary").addEventListener("click",printReport);
 
 let installPrompt=null;
-window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();installPrompt=event;$("install-app").hidden=false});
+window.addEventListener("beforeinstallprompt",event=>{if(OFFLINE_EDITION)return;event.preventDefault();installPrompt=event;$("install-app").hidden=false});
 $("install-app").addEventListener("click",async()=>{if(!installPrompt)return;installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$("install-app").hidden=true});
-if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+if(!OFFLINE_EDITION&&/^https?:$/.test(location.protocol)&&"serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+if(OFFLINE_EDITION){$("run-mode").textContent="Offline edition";$("storage-note").textContent="No hosting required · Save downloads a project file · Import JSON to reopen it";$("save-project").textContent="Save project file";$("install-app").hidden=true}
 
 document.querySelectorAll("[data-corr]").forEach(el=>el.addEventListener("change",()=>{correlations[el.dataset.corr]=Number(el.value);invalidateResearch()}));
 $("sync-means").addEventListener("click",()=>{const map={fck:design.fck,fyk:design.fyk,d:design.effectiveDepthMm,b:design.webWidthMm,As:design.asBottomMm2};variables.forEach(v=>{if(map[v.key]!==undefined)v.mean=map[v.key]});renderVariables();invalidateResearch();toast("Means synced to the current design")});
